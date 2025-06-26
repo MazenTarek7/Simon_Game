@@ -20,11 +20,11 @@ var mouseTrailPoints = [];
 var requiredPattern = [];
 var patternIndex = 0;
 
-function generateCaptcha() {
+function generateCaptcha(width = 200, height = 100) {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
-  canvas.width = 200;
-  canvas.height = 100;
+  canvas.width = width;
+  canvas.height = height;
 
   const characters = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
   let captchaString = "";
@@ -37,11 +37,14 @@ function generateCaptcha() {
   ctx.fillStyle = "#f0f0f0";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.font = "30px Arial";
+  const scale = Math.min(width / 200, height / 100);
+  ctx.font = `${30 * scale}px Arial`;
   ctx.fillStyle = "#333";
   for (let i = 0; i < captchaString.length; i++) {
     ctx.save();
-    ctx.translate(30 * i + 15, 50);
+    const x = (width / (captchaString.length + 1)) * (i + 1);
+    const y = height / 2 + (Math.random() - 0.5) * (height * 0.2);
+    ctx.translate(x, y);
     ctx.rotate((Math.random() - 0.5) * 0.4);
     ctx.fillText(captchaString[i], 0, 0);
     ctx.restore();
@@ -54,19 +57,19 @@ function generateCaptcha() {
     ctx.fillRect(
       Math.random() * canvas.width,
       Math.random() * canvas.height,
-      2,
-      2
+      2 * scale,
+      2 * scale
     );
   }
 
   return { image: canvas.toDataURL(), text: captchaString };
 }
 
-function generateHardCaptcha() {
+function generateHardCaptcha(width = 300, height = 150) {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
-  canvas.width = 300;
-  canvas.height = 150;
+  canvas.width = width;
+  canvas.height = height;
 
   const characters = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
   let captchaString = "";
@@ -87,7 +90,7 @@ function generateHardCaptcha() {
     ctx.strokeStyle = `rgba(${Math.random() * 100 + 100},${
       Math.random() * 100 + 100
     },${Math.random() * 100 + 100},0.6)`;
-    ctx.lineWidth = Math.random() * 3 + 1;
+    ctx.lineWidth = (Math.random() * 3 + 1) * (width / 300);
     ctx.beginPath();
     ctx.moveTo(0, Math.random() * canvas.height);
     for (let x = 0; x < canvas.width; x += 10) {
@@ -97,16 +100,17 @@ function generateHardCaptcha() {
   }
 
   const fonts = ["Arial", "Times", "Courier", "Verdana", "Georgia"];
+  const scale = Math.min(width / 300, height / 150);
   for (let i = 0; i < captchaString.length; i++) {
     ctx.save();
 
-    const x = 35 * i + Math.random() * 20 + 10;
-    const y = 80 + Math.random() * 40;
+    const x = (width / (captchaString.length + 1)) * (i + 1);
+    const y = height / 2 + (height / 2) * (Math.random() * 0.8) - height * 0.2;
     ctx.translate(x, y);
 
     ctx.rotate((Math.random() - 0.5) * 1.2);
 
-    const fontSize = Math.random() * 15 + 35;
+    const fontSize = (Math.random() * 15 + 35) * scale;
     const font = fonts[Math.floor(Math.random() * fonts.length)];
     ctx.font = `${fontSize}px ${font}`;
 
@@ -115,9 +119,9 @@ function generateHardCaptcha() {
     })`;
 
     ctx.shadowColor = "rgba(0,0,0,0.5)";
-    ctx.shadowBlur = 2;
-    ctx.shadowOffsetX = 1;
-    ctx.shadowOffsetY = 1;
+    ctx.shadowBlur = 2 * scale;
+    ctx.shadowOffsetX = 1 * scale;
+    ctx.shadowOffsetY = 1 * scale;
 
     ctx.transform(
       1,
@@ -139,8 +143,8 @@ function generateHardCaptcha() {
     ctx.fillRect(
       Math.random() * canvas.width,
       Math.random() * canvas.height,
-      Math.random() * 4 + 1,
-      Math.random() * 4 + 1
+      (Math.random() * 4 + 1) * scale,
+      (Math.random() * 4 + 1) * scale
     );
   }
 
@@ -148,7 +152,7 @@ function generateHardCaptcha() {
     ctx.strokeStyle = `rgba(${Math.random() * 150},${Math.random() * 150},${
       Math.random() * 150
     },0.7)`;
-    ctx.lineWidth = Math.random() * 2 + 1;
+    ctx.lineWidth = (Math.random() * 2 + 1) * scale;
     ctx.beginPath();
     ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
     ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
@@ -411,18 +415,32 @@ function failChallenge() {
 function showCaptcha() {
   captchaPending = true;
   isHardCaptcha = false;
-  const captcha = generateCaptcha();
+
+  const captchaWidth = Math.floor(Math.random() * 50) + 180; // 180-230
+  const captchaHeight = Math.floor(Math.random() * 30) + 90; // 90-120
+  const captcha = generateCaptcha(captchaWidth, captchaHeight);
   currentCaptchaAnswer = captcha.text;
 
   var randomX = Math.random() * 30 + 10;
   var randomY = Math.random() * 30 + 10;
 
+  var headers = [
+    "Please enter the text you see below:",
+    "Verification Required",
+    "Security Check",
+    "Confirm You Are Not a Robot",
+  ];
+  var buttons = ["Submit", "Verify", "Confirm", "Proceed"];
+
+  var header = headers[Math.floor(Math.random() * headers.length)];
+  var button = buttons[Math.floor(Math.random() * buttons.length)];
+
   const captchaHTML = `
     <div id="captcha-container" style="position: fixed; top: ${randomY}%; left: ${randomX}%; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.5); text-align: center;">
-      <h2>Please enter the text you see below:</h2>
+      <h2>${header}</h2>
       <img src="${captcha.image}" alt="CAPTCHA">
       <input type="text" id="captcha-input" style="display: block; margin: 10px auto; padding: 5px;">
-      <button onclick="verifyCaptcha()">Submit</button>
+      <button onclick="verifyCaptcha()">${button}</button>
     </div>
   `;
   $("body").append(captchaHTML);
@@ -432,7 +450,10 @@ function showCaptcha() {
 function showHardCaptcha() {
   captchaPending = true;
   isHardCaptcha = true;
-  const captcha = generateHardCaptcha();
+
+  const captchaWidth = Math.floor(Math.random() * 60) + 280; // 280-340
+  const captchaHeight = Math.floor(Math.random() * 40) + 140; // 140-180
+  const captcha = generateHardCaptcha(captchaWidth, captchaHeight);
   currentCaptchaAnswer = captcha.text;
 
   var randomX = Math.random() * 20 + 15;
@@ -440,14 +461,25 @@ function showHardCaptcha() {
 
   const timeLimit = Math.max(15, 25 - (level / 10 - 1) * 5);
 
+  var headers = [
+    "HARD CAPTCHA CHALLENGE",
+    "ADVANCED VERIFICATION",
+    "FINAL SECURITY CHECK",
+    "PROVE YOUR HUMANITY",
+  ];
+  var buttons = ["Submit Challenge", "Verify Identity", "Confirm Action"];
+
+  var header = headers[Math.floor(Math.random() * headers.length)];
+  var button = buttons[Math.floor(Math.random() * buttons.length)];
+
   const captchaHTML = `
     <div id="captcha-container" style="position: fixed; top: ${randomY}%; left: ${randomX}%; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.7); text-align: center; border: 3px solid #ff6b6b;">
       <div id="captcha-timer" style="position: absolute; top: 10px; right: 15px; font-size: 18px; color: #d63031; font-weight: bold;">${timeLimit}s</div>
-      <h2 style="color: #d63031; font-weight: bold;">HARD CAPTCHA CHALLENGE</h2>
+      <h2 style="color: #d63031; font-weight: bold;">${header}</h2>
       <p style="color: #666; font-size: 14px;">Enter the 8 characters you see below (case-sensitive):</p>
       <img src="${captcha.image}" alt="HARD CAPTCHA" style="border: 2px solid #ddd; border-radius: 5px;">
       <input type="text" id="captcha-input" style="display: block; margin: 15px auto; padding: 10px; font-size: 16px; width: 200px; border: 2px solid #ff6b6b; border-radius: 5px;" maxlength="8" placeholder="8 characters">
-      <button onclick="verifyCaptcha()" style="background: #d63031; color: white; padding: 10px 20px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">Submit Challenge</button>
+      <button onclick="verifyCaptcha()" style="background: #d63031; color: white; padding: 10px 20px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">${button}</button>
       <p style="color: #999; font-size: 12px; margin-top: 10px;">Anti-bot security active</p>
     </div>
   `;
@@ -507,11 +539,16 @@ function resumeGameAfterCaptcha() {
   var randomChosenColour = buttonColours[randomNumber];
   gamePattern.push(randomChosenColour);
 
-  $("#" + randomChosenColour)
-    .fadeIn(100)
-    .fadeOut(100)
-    .fadeIn(100);
-  playSound(randomChosenColour);
+  setTimeout(
+    function () {
+      $("#" + randomChosenColour)
+        .fadeIn(100)
+        .fadeOut(100)
+        .fadeIn(100);
+      playSound(randomChosenColour);
+    },
+    speedVariationEnabled ? Math.random() * 500 + 200 : 200
+  );
 }
 
 function playPattern() {
@@ -568,11 +605,11 @@ function detectBotBehavior() {
     var avgTime = clickTimes.reduce((a, b) => a + b, 0) / clickTimes.length;
     var minTime = Math.min(...clickTimes);
 
-    if (avgTime < 120) {
+    if (avgTime < 200) {
       suspiciousClicks++;
     }
 
-    if (minTime < 60) {
+    if (minTime < 150) {
       suspiciousClicks += 2;
     }
 
